@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shop_app_forms/data/categories.dart';
 import 'package:shop_app_forms/models/category.dart';
-import 'package:shop_app_forms/models/grocery_item.dart';
+// import 'package:shop_app_forms/models/grocery_item.dart';
 import 'package:http/http.dart' as http;
+import 'package:shop_app_forms/models/grocery_item.dart';
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -14,6 +15,7 @@ class NewItem extends StatefulWidget {
 }
 
 class _NewItemState extends State<NewItem> {
+  bool _isSaved = false;
   var _enteredName = "";
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
@@ -22,6 +24,9 @@ class _NewItemState extends State<NewItem> {
   void _saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        _isSaved = true;
+      });
       final url = Uri.https(
         "shoppinglist-2929a-default-rtdb.firebaseio.com",
         "shopping-list.json",
@@ -39,10 +44,18 @@ class _NewItemState extends State<NewItem> {
           },
         ),
       );
+      final Map<String, dynamic> data = json.decode(response.body);
       if (!context.mounted) {
         return;
       }
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(
+        GroceryItem(
+          id: data["name"],
+          name: _enteredName,
+          quantity: _enteredQuantity,
+          category: _selectedCategory,
+        ),
+      );
     }
   }
 
@@ -146,8 +159,14 @@ class _NewItemState extends State<NewItem> {
                     child: const Text("Reset"),
                   ),
                   ElevatedButton(
-                    onPressed: _saveItem,
-                    child: const Text("Add Item"),
+                    onPressed: _isSaved ? null : _saveItem,
+                    child: _isSaved
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(),
+                          )
+                        : const Text("Add Item"),
                   )
                 ],
               )
